@@ -1,0 +1,19 @@
+{
+  "agentName": "Thesis Reference Checker",
+  "trigger": {
+    "type": "email",
+    "provider": "outlook",
+    "condition": "attachment_present"
+  },
+  "tasks": [
+    {
+      "type": "check_references"
+    }
+  ],
+  "actions": [
+    {
+      "type": "reply_email",
+      "template": "reference_issue_found"
+    }
+  ]
+}
