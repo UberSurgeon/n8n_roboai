@@ -5,7 +5,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+    <div className="min-h-screen bg-red-500">
       <form className="w-full max-w-sm bg-white p-8 rounded-xl shadow-md">
         <h1 className="text-2xl font-bold mb-6 text-center">Sign in</h1>
         <input
@@ -22,9 +22,10 @@ export default function Login() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded">
-          Sign in
-        </button>
+        <button type="submit" className="bg-red-500 text-white px-4 py-2 rounded">
+          Create
+          </button>
+          
       </form>
     </div>
   );
