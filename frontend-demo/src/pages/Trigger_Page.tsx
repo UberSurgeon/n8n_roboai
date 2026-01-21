@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
-import { Mail, FileText, Upload, Clock, ArrowLeft, Webhook, Calendar, Zap } from 'lucide-react';
+import {
+  Mail,
+  FileText,
+  Upload,
+  Clock,
+  ArrowLeft,
+  Webhook,
+  Calendar,
+  Zap,
+  Search
+} from 'lucide-react';
 import { useNavigate } from "react-router-dom";
-
-interface WizardStep1Props {
-  onBack: () => void;
-  onNext: (trigger: string) => void;
-  initialTrigger?: string | null;
-}
 
 interface Trigger {
   id: string;
@@ -64,17 +68,17 @@ const triggers: Trigger[] = [
   }
 ];
 
-function TriggerOption({ 
-  trigger, 
-  selected, 
-  onClick 
-}: { 
-  trigger: Trigger; 
-  selected: boolean; 
+function TriggerOption({
+  trigger,
+  selected,
+  onClick
+}: {
+  trigger: Trigger;
+  selected: boolean;
   onClick: () => void;
 }) {
   const Icon = trigger.icon;
-  
+
   return (
     <button
       onClick={onClick}
@@ -88,38 +92,28 @@ function TriggerOption({
       }`}
     >
       <div className="flex items-start gap-4">
-        <div className={`flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center ${
-          trigger.comingSoon
-            ? 'bg-muted'
-            : selected 
-            ? 'bg-blue-100' 
-            : 'bg-muted'
-        }`}>
-          <Icon className={`w-6 h-6 ${
-            trigger.comingSoon
-              ? 'text-muted-foreground'
-              : selected 
-              ? 'text-blue-600' 
-              : 'text-foreground'
-          }`} />
+        <div
+          className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+            selected ? 'bg-blue-100' : 'bg-muted'
+          }`}
+        >
+          <Icon
+            className={`w-6 h-6 ${
+              selected ? 'text-blue-600' : 'text-foreground'
+            }`}
+          />
         </div>
-        
-        <div className="flex-1 min-w-0">
+
+        <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <h3 className={`text-lg font-medium ${
-              trigger.comingSoon ? 'text-muted-foreground' : 'text-foreground'
-            }`}>
-              {trigger.title}
-            </h3>
+            <h3 className="text-lg font-medium">{trigger.title}</h3>
             {trigger.comingSoon && (
-              <span className="px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground rounded">
+              <span className="px-2 py-0.5 text-xs bg-muted rounded">
                 Coming Soon
               </span>
             )}
           </div>
-          <p className={`text-sm ${
-            trigger.comingSoon ? 'text-muted-foreground' : 'text-muted-foreground'
-          }`}>
+          <p className="text-sm text-muted-foreground">
             {trigger.description}
           </p>
         </div>
@@ -128,69 +122,76 @@ function TriggerOption({
   );
 }
 
-export default function WizardStep1({ onBack, onNext, initialTrigger }: WizardStep1Props) {
-  const [selectedTrigger, setSelectedTrigger] = useState<string | null>(initialTrigger || null);
-  const [search, setSearch] = useState<string>(""); // <-- search state
+export default function TriggerPage() {
+  const navigate = useNavigate();
 
-  const handleTriggerClick = (triggerId: string, comingSoon?: boolean) => {
-    if (!comingSoon) {
-      setSelectedTrigger(triggerId);
-    }
-  };
+  const [selectedTrigger, setSelectedTrigger] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
-  // Filter triggers based on search input
-  const filteredTriggers = triggers.filter((trigger) =>
+  const filteredTriggers = triggers.filter(trigger =>
     trigger.title.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-card border-b border-border">
-        <div className="max-w-4xl mx-auto px-6 py-8">
-          <button
-            onClick={onBack}
-            className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Dashboard
-          </button>
-          
-          <div>
-            <div className="mb-3">
-              <span className="inline-block px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-md">
-                Step 1 of 4
-              </span>
-            </div>
-            <h1 className="text-3xl font-semibold text-foreground mb-3">
-              How should the agent start?
-            </h1>
-            <p className="text-muted-foreground">
-              Choose what will trigger your AI agent to run. You can change this later.
-            </p>
-          </div>
+<div className="bg-card border-b border-border">
+  <div className="max-w-4xl mx-auto px-6 py-8">
+    {/* Back button */}
+    <button
+      onClick={() => navigate("/dashboard")}
+      className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6"
+    >
+      <ArrowLeft className="w-4 h-4" />
+      Back to Dashboard
+    </button>
+
+    {/* Step + title block */}
+    <div>
+      <span className="inline-block mb-3 px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-md">
+        Step 1 of 4
+      </span>
+
+      <h1 className="text-3xl font-semibold text-foreground mb-2">
+        How should the agent start?
+      </h1>
+
+      <p className="text-muted-foreground">
+        Choose what will trigger your AI agent to run.
+      </p>
+    </div>
+  </div>
+</div>
+
+
+      {/* Sticky search */}
+      <div className="sticky top-0 z-10 bg-blue-500/90 backdrop-blur border-b border-blue-700">
+        <div className="max-w-4xl mx-auto px-6 py-4 relative">
+          <Search className="absolute left-10 top-1/2 -translate-y-1/2 w-4 h-4 text-white/70" />
+
+          <input
+        type="text"
+        placeholder="Search triggers..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="w-full rounded-lg border border-blue-500 bg-white px-4 py-3 pl-11 text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white"
+          />
         </div>
       </div>
 
-      {/* Search bar */}
-      <div className="max-w-4xl mx-auto px-6 py-6">
-        <input
-          type="text"
-          placeholder="Search triggers..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
 
-      {/* Content */}
-      <div className="max-w-4xl mx-auto px-6 py-8 space-y-4 mb-8">
-        {filteredTriggers.map((trigger) => (
+
+
+      {/* Trigger list */}
+      <div className="max-w-4xl mx-auto px-6 py-8 space-y-4">
+        {filteredTriggers.map(trigger => (
           <TriggerOption
             key={trigger.id}
             trigger={trigger}
             selected={selectedTrigger === trigger.id}
-            onClick={() => handleTriggerClick(trigger.id, trigger.comingSoon)}
+            onClick={() =>
+              !trigger.comingSoon && setSelectedTrigger(trigger.id)
+            }
           />
         ))}
 
@@ -200,13 +201,17 @@ export default function WizardStep1({ onBack, onNext, initialTrigger }: WizardSt
       </div>
 
       {/* Footer */}
-      <div className="max-w-4xl mx-auto px-6 py-8 flex justify-end border-t border-border">
+      <div className="max-w-4xl mx-auto px-6 py-8 border-t border-border flex justify-end">
         <button
-          onClick={() => selectedTrigger && onNext(selectedTrigger)}
           disabled={!selectedTrigger}
-          className={`px-8 py-3 font-medium rounded-lg transition-colors ${
+          onClick={() =>
+            navigate("/agent-action", {
+              state: { trigger: selectedTrigger }
+            })
+          }
+          className={`px-8 py-3 rounded-lg font-medium ${
             selectedTrigger
-              ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
+              ? 'bg-blue-600 text-white hover:bg-blue-700'
               : 'bg-muted text-muted-foreground cursor-not-allowed'
           }`}
         >
