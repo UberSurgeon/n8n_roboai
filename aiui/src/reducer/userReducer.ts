@@ -5,7 +5,7 @@ const userSlice = createSlice({
     initialState: {},
     reducers: {
         setUser(_state, action) {
-            return action.payload
+            return action.payload;
         },
         clearUser(_state, _action) {
             return {}
@@ -21,7 +21,7 @@ export const initializeUser = (user) => {
     }
 }
 
-export const clearUser = (user) => {
+export const deinitializeUser = (user) => {
     return async dispatch => {
         dispatch(clearUser())
     }

@@ -1,10 +1,11 @@
 import { useState } from "react";
-import loginService from '../service/login'
+import { useLogin } from '../service/login'
 
 
 const Loginform = () => {
-    const [username, setUsername] = useState("")
-    const [password, setPassword] = useState("")
+    const [username, setUsername] = useState("");
+    const [password, setPassword] = useState("");
+    const login = useLogin();
 
     const onCreate = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
@@ -15,10 +16,10 @@ const Loginform = () => {
         console.log(credential);
 
         try{
-            const login = await loginService.login(
+            const data = await login(
                 credential
             )
-            console.log(login)
+            console.log(data)
         } catch (exception) {
             console.error("error", exception);
         }
@@ -42,7 +43,7 @@ const Loginform = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     />
-                    <button type='submit'>create</button>
+                    <button type='submit'>login</button>
                 </form>
             </div>
         </>
