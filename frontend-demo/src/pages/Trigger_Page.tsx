@@ -130,12 +130,18 @@ function TriggerOption({
 
 export default function WizardStep1({ onBack, onNext, initialTrigger }: WizardStep1Props) {
   const [selectedTrigger, setSelectedTrigger] = useState<string | null>(initialTrigger || null);
+  const [search, setSearch] = useState<string>(""); // <-- search state
 
   const handleTriggerClick = (triggerId: string, comingSoon?: boolean) => {
     if (!comingSoon) {
       setSelectedTrigger(triggerId);
     }
   };
+
+  // Filter triggers based on search input
+  const filteredTriggers = triggers.filter((trigger) =>
+    trigger.title.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -166,33 +172,46 @@ export default function WizardStep1({ onBack, onNext, initialTrigger }: WizardSt
         </div>
       </div>
 
-      {/* Content */}
-      <div className="max-w-4xl mx-auto px-6 py-8">
-        <div className="space-y-4 mb-8">
-          {triggers.map((trigger) => (
-            <TriggerOption
-              key={trigger.id}
-              trigger={trigger}
-              selected={selectedTrigger === trigger.id}
-              onClick={() => handleTriggerClick(trigger.id, trigger.comingSoon)}
-            />
-          ))}
-        </div>
+      {/* Search bar */}
+      <div className="max-w-4xl mx-auto px-6 py-6">
+        <input
+          type="text"
+          placeholder="Search triggers..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
 
-        {/* Footer */}
-        <div className="flex justify-end pt-6 border-t border-border">
-          <button
-            onClick={() => selectedTrigger && onNext(selectedTrigger)}
-            disabled={!selectedTrigger}
-            className={`px-8 py-3 font-medium rounded-lg transition-colors ${
-              selectedTrigger
-                ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
-                : 'bg-muted text-muted-foreground cursor-not-allowed'
-            }`}
-          >
-            Next Step
-          </button>
-        </div>
+      {/* Content */}
+      <div className="max-w-4xl mx-auto px-6 py-8 space-y-4 mb-8">
+        {filteredTriggers.map((trigger) => (
+          <TriggerOption
+            key={trigger.id}
+            trigger={trigger}
+            selected={selectedTrigger === trigger.id}
+            onClick={() => handleTriggerClick(trigger.id, trigger.comingSoon)}
+          />
+        ))}
+
+        {filteredTriggers.length === 0 && (
+          <p className="text-muted-foreground">No triggers found.</p>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="max-w-4xl mx-auto px-6 py-8 flex justify-end border-t border-border">
+        <button
+          onClick={() => selectedTrigger && onNext(selectedTrigger)}
+          disabled={!selectedTrigger}
+          className={`px-8 py-3 font-medium rounded-lg transition-colors ${
+            selectedTrigger
+              ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
+              : 'bg-muted text-muted-foreground cursor-not-allowed'
+          }`}
+        >
+          Next Step
+        </button>
       </div>
     </div>
   );
