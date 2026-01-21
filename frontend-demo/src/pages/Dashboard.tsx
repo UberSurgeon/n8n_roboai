@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, Bot, FileText, Mail, Clock, Upload, Share2, Trash2 } from 'lucide-react';
+import { useNavigate } from "react-router-dom";
 
 interface Agent {
   id: string;
@@ -101,6 +102,8 @@ function AgentCard({
 }
 
 export default function Dashboard() {
+  const navigate = useNavigate(); // ✅ inside component
+
   const [agents, setAgents] = useState<Agent[]>([
     {
       id: 'agent-1',
@@ -128,10 +131,7 @@ export default function Dashboard() {
     }
   ]);
 
-  const handleShare = (agent: Agent) => {
-    alert(`Share ${agent.name}`);
-  };
-
+  const handleShare = (agent: Agent) => { alert(`Share ${agent.name}`); };
   const handleDelete = (agentId: string) => {
     if (confirm('Are you sure you want to delete this agent?')) {
       setAgents(agents.filter(a => a.id !== agentId));
@@ -139,25 +139,37 @@ export default function Dashboard() {
   };
 
   const handleCreateNew = () => {
-    alert('Create new agent clicked');
+    navigate("/trigger-page"); // moves to the create page
   };
+ 
+  const handleLogout = () => { navigate("/login"); }; // ✅ logout button
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="bg-card border-b border-border">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-semibold text-foreground mb-2">My AI Agents</h1>
-              <p className="text-muted-foreground">Create and manage your automated teaching assistants</p>
-            </div>
+        <div className="max-w-7xl mx-auto px-6 py-8 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-semibold text-foreground mb-2">My AI Agents</h1>
+            <p className="text-muted-foreground">Create and manage your automated teaching assistants</p>
+          </div>
+
+          <div className="flex gap-4">
+            {/* Create new agent */}
             <button
               onClick={handleCreateNew}
               className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
             >
               <Plus className="w-5 h-5" />
               Create New Agent
+            </button>
+
+            {/* Logout */}
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Logout
             </button>
           </div>
         </div>

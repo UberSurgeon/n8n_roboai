@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Mail, FileText, Upload, Clock, ArrowLeft, Webhook, Calendar, Zap } from 'lucide-react';
+import { useNavigate } from "react-router-dom";
 
 interface WizardStep1Props {
   onBack: () => void;
