@@ -1,11 +1,8 @@
+// src/pages/After_Analysis.tsx
 import React, { useState } from 'react';
 import { MessageCircle, FileOutput, Bell, Save, ArrowLeft, Database, Send, Sparkles, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-
-interface WizardStep3Props {
-  onNext: (actions: string[]) => void;
-  initialActions?: string[];
-}
+import { useWizard } from '../context/WizardContext';
 
 interface Action {
   id: string;
@@ -32,60 +29,80 @@ function ActionOption({ action, selected, onClick }: { action: Action; selected:
       onClick={onClick}
       disabled={action.comingSoon}
       className={`w-full p-6 rounded-lg border transition-all text-left ${
-        action.comingSoon ? 'border-border bg-muted/30 cursor-not-allowed opacity-60' : selected ? 'border-blue-600 bg-blue-50 shadow-sm' : 'border-border bg-card hover:border-blue-300 hover:shadow-sm'
+        action.comingSoon 
+          ? 'border-border bg-muted/30 cursor-not-allowed opacity-60' 
+          : selected 
+          ? 'border-blue-600 bg-blue-50 shadow-sm' 
+          : 'border-border bg-card hover:border-blue-300 hover:shadow-sm'
       }`}
     >
       <div className="flex items-start gap-4">
         <div className={`flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center ${
           action.comingSoon ? 'bg-muted' : selected ? 'bg-blue-100' : 'bg-muted'
         }`}>
-          <Icon className={`w-6 h-6 ${action.comingSoon ? 'text-muted-foreground' : selected ? 'text-blue-600' : 'text-foreground'}`} />
+          <Icon className={`w-6 h-6 ${
+            action.comingSoon ? 'text-muted-foreground' : selected ? 'text-blue-600' : 'text-foreground'
+          }`} />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <h3 className={`text-lg font-medium ${action.comingSoon ? 'text-muted-foreground' : 'text-foreground'}`}>
               {action.title}
             </h3>
-            {action.comingSoon && <span className="px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground rounded">Coming Soon</span>}
+            {action.comingSoon && (
+              <span className="px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground rounded">
+                Coming Soon
+              </span>
+            )}
           </div>
-          <p className={`text-sm ${action.comingSoon ? 'text-muted-foreground' : 'text-muted-foreground'}`}>{action.description}</p>
+          <p className="text-sm text-muted-foreground">{action.description}</p>
         </div>
       </div>
     </button>
   );
 }
 
-export default function WizardStep3({ onNext, initialActions }: WizardStep3Props) {
+export default function AfterAnalysis() {
   const navigate = useNavigate();
-  const [selectedActions, setSelectedActions] = useState<string[]>(initialActions || []);
+  const { selectedActions, setActions } = useWizard();
   const [search, setSearch] = useState('');
 
   const toggleAction = (actionId: string, comingSoon?: boolean) => {
     if (comingSoon) return;
-    setSelectedActions(prev => (prev.includes(actionId) ? prev.filter(id => id !== actionId) : [...prev, actionId]));
+    const newActions = selectedActions.includes(actionId)
+      ? selectedActions.filter(id => id !== actionId)
+      : [...selectedActions, actionId];
+    setActions(newActions);
   };
 
-  const filteredActions = actions.filter(action => action.title.toLowerCase().includes(search.toLowerCase()));
-
-  const goBack = () => {
-    navigate('/agent-action'); // previous page
-  };
+  const filteredActions = actions.filter(action => 
+    action.title.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="bg-card border-b border-border">
         <div className="max-w-4xl mx-auto px-6 py-8">
-          <button onClick={goBack} className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-3 transition-colors">
+          <button 
+            onClick={() => navigate('/agent-action')} 
+            className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors"
+          >
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
 
-          <span className="inline-block mb-3 px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-md">Step 3 of 4</span>
-          <h1 className="text-3xl font-semibold text-foreground mb-3">What should happen after the analysis?</h1>
+          <span className="inline-block mb-3 px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-md">
+            Step 3 of 4
+          </span>
+          <h1 className="text-3xl font-semibold text-foreground mb-3">
+            What should happen after the analysis?
+          </h1>
           <p className="text-muted-foreground mb-1">
-            Choose how the agent should respond once it has completed its review. You can always adjust this later.
+            Choose how the agent should respond once it has completed its review.
           </p>
-          <p className="text-blue-600 font-medium mb-4">You can choose more than one action.</p>
+          <p className="text-blue-600 font-medium">
+            You can choose more than one action.
+          </p>
         </div>
       </div>
 
@@ -106,15 +123,22 @@ export default function WizardStep3({ onNext, initialActions }: WizardStep3Props
       {/* Content */}
       <div className="max-w-4xl mx-auto px-6 py-8 space-y-4">
         {filteredActions.map(action => (
-          <ActionOption key={action.id} action={action} selected={selectedActions.includes(action.id)} onClick={() => toggleAction(action.id, action.comingSoon)} />
+          <ActionOption 
+            key={action.id} 
+            action={action} 
+            selected={selectedActions.includes(action.id)} 
+            onClick={() => toggleAction(action.id, action.comingSoon)} 
+          />
         ))}
-        {filteredActions.length === 0 && <p className="text-muted-foreground">No actions found.</p>}
+        {filteredActions.length === 0 && (
+          <p className="text-muted-foreground">No actions found.</p>
+        )}
       </div>
 
       {/* Footer */}
       <div className="max-w-4xl mx-auto px-6 py-8 border-t border-border flex justify-between items-center">
         <button
-          onClick={goBack} // Previous step
+          onClick={() => navigate('/agent-action')}
           className="px-6 py-3 font-medium text-foreground bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
         >
           Previous Step

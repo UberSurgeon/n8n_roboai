@@ -1,3 +1,4 @@
+// src/pages/Review_Agent.tsx
 import React from "react";
 import {
   ArrowLeft,
@@ -13,15 +14,9 @@ import {
   Bell,
   Save,
 } from "lucide-react";
-
+import { useNavigate } from "react-router-dom";
+import { useWizard } from "../context/WizardContext";
 import { buildN8nWorkflow } from "../utils/n8nWorkflowBuilder";
-
-interface WizardStep4Props {
-  onBack: () => void;
-  selectedTrigger: string | null;
-  selectedTasks: string[];
-  selectedActions: string[];
-}
 
 // Map IDs to display information
 const triggerMap: Record<string, { icon: typeof Mail; title: string }> = {
@@ -34,8 +29,8 @@ const triggerMap: Record<string, { icon: typeof Mail; title: string }> = {
 const taskMap: Record<string, { icon: typeof CheckCircle; title: string }> = {
   "check-references": { icon: CheckCircle, title: "Check References" },
   "check-language": { icon: Languages, title: "Check Language" },
-  summarize: { icon: FileText, title: "Summarize Document" },
-  custom: { icon: Pencil, title: "Custom Instruction" },
+  "summarize": { icon: FileText, title: "Summarize Document" },
+  "custom": { icon: Pencil, title: "Custom Instruction" },
 };
 
 const actionMap: Record<string, { icon: typeof MessageCircle; title: string }> = {
@@ -45,39 +40,83 @@ const actionMap: Record<string, { icon: typeof MessageCircle; title: string }> =
   "save-result": { icon: Save, title: "Save Result" },
 };
 
-export default function Review_Agent({
-  onBack,
-  selectedTrigger,
-  selectedTasks = [],
-  selectedActions = [],
-}: WizardStep4Props) {
+// Helper function to generate agent name
+const generateAgentName = (trigger: string | null, tasks: string[]): string => {
+  const triggerNames: Record<string, string> = {
+    'outlook-email': 'Email',
+    'moodle-assignment': 'Assignment',
+    'manual-upload': 'Document',
+    'scheduled-run': 'Scheduled'
+  };
+  
+  const taskNames: Record<string, string> = {
+    'check-references': 'Reference Checker',
+    'check-language': 'Language Reviewer',
+    'summarize': 'Summarizer',
+    'custom': 'Custom Assistant'
+  };
+
+  const triggerName = trigger ? triggerNames[trigger] : 'Agent';
+  const taskName = tasks.length > 0 ? taskNames[tasks[0]] : 'Assistant';
+  
+  return `${triggerName} ${taskName}`;
+};
+
+export default function ReviewAgent() {
+  const navigate = useNavigate();
+  const { 
+    selectedTrigger, 
+    selectedTasks, 
+    selectedActions, 
+    addAgent,
+    resetWizard 
+  } = useWizard();
+
   const trigger = selectedTrigger ? triggerMap[selectedTrigger] : null;
 
-  const handleCreateWorkflow = () => {
+  const handleCreateAgent = () => {
     if (!selectedTrigger) {
       alert("No trigger selected");
       return;
     }
 
+    // Generate workflow JSON
     const workflowJSON = buildN8nWorkflow(
       selectedTrigger,
       selectedActions,
-      "My AI Agent"
+      generateAgentName(selectedTrigger, selectedTasks)
     );
 
     console.log("Generated workflow:", workflowJSON);
 
+    // Download workflow as JSON file
     const blob = new Blob(
       [JSON.stringify(workflowJSON, null, 2)],
       { type: "application/json" }
     );
-
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
     link.download = "agent_workflow.json";
     link.click();
     URL.revokeObjectURL(url);
+
+    // Create new agent and add to dashboard
+    const newAgent = {
+      id: `agent-${Date.now()}`,
+      name: generateAgentName(selectedTrigger, selectedTasks),
+      trigger: trigger?.title || 'Unknown',
+      tasks: selectedTasks.map(taskId => taskMap[taskId]?.title || taskId),
+      status: 'Active' as const,
+      lastRun: 'Just created'
+    };
+
+    addAgent(newAgent);
+    resetWizard();
+
+    // Show success message and navigate to dashboard
+    alert(`Agent "${newAgent.name}" created successfully!`);
+    navigate('/dashboard');
   };
 
   return (
@@ -86,7 +125,7 @@ export default function Review_Agent({
       <div className="bg-card border-b border-border">
         <div className="max-w-4xl mx-auto px-6 py-8">
           <button
-            onClick={onBack}
+            onClick={() => navigate('/after-analysis')}
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -103,7 +142,7 @@ export default function Review_Agent({
               Review your agent
             </h1>
             <p className="text-muted-foreground">
-              Confirm the settings below before creating your agent.
+              Confirm the settings below before creating your agent. You can always edit these later.
             </p>
           </div>
         </div>
@@ -129,7 +168,7 @@ export default function Review_Agent({
         {/* Tasks */}
         <div className="bg-card rounded-lg border border-border p-6">
           <h2 className="text-xl font-semibold mb-4">AI Tasks</h2>
-          {selectedTasks.length > 0 ? (
+          {selectedTasks && selectedTasks.length > 0 ? (
             <div className="flex flex-wrap gap-3">
               {selectedTasks.map((taskId) => {
                 const task = taskMap[taskId];
@@ -154,7 +193,7 @@ export default function Review_Agent({
         {/* Actions */}
         <div className="bg-card rounded-lg border border-border p-6">
           <h2 className="text-xl font-semibold mb-4">Actions</h2>
-          {selectedActions.length > 0 ? (
+          {selectedActions && selectedActions.length > 0 ? (
             <div className="flex flex-wrap gap-3">
               {selectedActions.map((actionId) => {
                 const action = actionMap[actionId];
@@ -179,13 +218,13 @@ export default function Review_Agent({
         {/* Footer */}
         <div className="flex justify-between items-center pt-6 border-t border-border">
           <button
-            onClick={onBack}
+            onClick={() => navigate('/after-analysis')}
             className="px-6 py-3 font-medium bg-card border border-border rounded-lg hover:bg-muted/50"
           >
             Previous Step
           </button>
           <button
-            onClick={handleCreateWorkflow}
+            onClick={handleCreateAgent}
             className="px-8 py-3 font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-sm"
           >
             Create Agent

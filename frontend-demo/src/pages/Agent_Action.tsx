@@ -1,56 +1,99 @@
+// src/pages/Agent_Action.tsx
 import React, { useState } from "react";
-import { ArrowLeft, Search, Check } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { CheckCircle, Languages, FileText, Pencil, ArrowLeft, Search } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useWizard } from "../context/WizardContext";
 
-
-interface Action {
+interface AITask {
   id: string;
+  icon: typeof CheckCircle;
   title: string;
   description: string;
 }
 
-const actions: Action[] = [
+const aiTasks: AITask[] = [
   {
-    id: "summarize",
-    title: "Summarize Document",
-    description: "Generate a concise summary of the document"
+    id: 'check-references',
+    icon: CheckCircle,
+    title: 'Check References',
+    description: 'Detect citation and formatting issues in academic documents'
   },
   {
-    id: "reply-email",
-    title: "Reply to Student",
-    description: "Draft a helpful response email"
+    id: 'check-language',
+    icon: Languages,
+    title: 'Check Language',
+    description: 'Review grammar, spelling, and clarity of writing'
   },
   {
-    id: "check-language",
-    title: "Check Language",
-    description: "Fix grammar, spelling, and tone"
+    id: 'summarize',
+    icon: FileText,
+    title: 'Summarize Document',
+    description: 'Create a short summary of the document for quick review'
   },
   {
-    id: "check-references",
-    title: "Check References",
-    description: "Validate citations and references"
+    id: 'custom',
+    icon: Pencil,
+    title: 'Custom Instruction',
+    description: 'Describe your own task in plain language'
   }
 ];
 
+function TaskOption({ 
+  task, 
+  selected, 
+  onClick 
+}: { 
+  task: AITask; 
+  selected: boolean; 
+  onClick: () => void;
+}) {
+  const Icon = task.icon;
+  
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full p-6 rounded-lg border transition-all text-left ${
+        selected
+          ? 'border-blue-600 bg-blue-50 shadow-sm'
+          : 'border-border bg-card hover:border-blue-300 hover:shadow-sm'
+      }`}
+    >
+      <div className="flex items-start gap-4">
+        <div className={`flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center ${
+          selected ? 'bg-blue-100' : 'bg-muted'
+        }`}>
+          <Icon className={`w-6 h-6 ${
+            selected ? 'text-blue-600' : 'text-foreground'
+          }`} />
+        </div>
+        
+        <div className="flex-1 min-w-0">
+          <h3 className="text-lg font-medium text-foreground mb-1">
+            {task.title}
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            {task.description}
+          </p>
+        </div>
+      </div>
+    </button>
+  );
+}
+
 export default function AgentAction() {
   const navigate = useNavigate();
-  const location = useLocation();
-
-  const trigger = location.state?.trigger; // 👈 from previous step
-
+  const { selectedTasks, setTasks } = useWizard();
   const [search, setSearch] = useState("");
-  const [selectedActions, setSelectedActions] = useState<string[]>([]);
 
-  const filteredActions = actions.filter(action =>
-    action.title.toLowerCase().includes(search.toLowerCase())
+  const filteredTasks = aiTasks.filter(task =>
+    task.title.toLowerCase().includes(search.toLowerCase())
   );
 
-  const toggleAction = (id: string) => {
-    setSelectedActions(prev =>
-      prev.includes(id)
-        ? prev.filter(a => a !== id)
-        : [...prev, id]
-    );
+  const toggleTask = (taskId: string) => {
+    const newTasks = selectedTasks.includes(taskId)
+      ? selectedTasks.filter(id => id !== taskId)
+      : [...selectedTasks, taskId];
+    setTasks(newTasks);
   };
 
   return (
@@ -70,65 +113,45 @@ export default function AgentAction() {
             Step 2 of 4
           </span>
 
-          <h1 className="text-3xl font-semibold mb-2">
-            What should the agent do?
+          <h1 className="text-3xl font-semibold text-foreground mb-3">
+            What should the agent do with the document?
           </h1>
-
-          <p className="text-muted-foreground">
-            Trigger: <strong>{trigger}</strong>
+          <p className="text-muted-foreground mb-1">
+            Select the type of review or task you'd like the AI to perform.
+          </p>
+          <p className="text-blue-600 font-medium">
+            You can choose more than one task.
           </p>
         </div>
       </div>
 
-    {/* Sticky search */}
-    <div className="sticky top-0 z-10 bg-blue-500/90 backdrop-blur border-b border-blue-700">
-      <div className="max-w-4xl mx-auto px-6 py-4 relative">
-        {/* Search icon */}
-        <Search className="absolute left-10 top-1/2 -translate-y-1/2 w-4 h-4 text-white/70" />
-
-        {/* Input */}
-        <input
-        type="text"
-        placeholder="Search actions..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="w-full rounded-lg border border-blue-500 bg-white px-4 py-3 pl-11 text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white"
-        />
+      {/* Sticky search */}
+      <div className="sticky top-0 z-10 bg-blue-500/90 backdrop-blur border-b border-blue-700">
+        <div className="max-w-4xl mx-auto px-6 py-4 relative">
+          <Search className="absolute left-10 top-1/2 -translate-y-1/2 w-4 h-4 text-white/70" />
+          <input
+            type="text"
+            placeholder="Search tasks..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full rounded-lg border border-blue-500 bg-white px-4 py-3 pl-11 text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white"
+          />
+        </div>
       </div>
-    </div>
 
-      {/* Action list */}
+      {/* Task list */}
       <div className="max-w-4xl mx-auto px-6 py-8 space-y-4">
-        {filteredActions.map(action => {
-          const selected = selectedActions.includes(action.id);
+        {filteredTasks.map((task) => (
+          <TaskOption
+            key={task.id}
+            task={task}
+            selected={selectedTasks.includes(task.id)}
+            onClick={() => toggleTask(task.id)}
+          />
+        ))}
 
-          return (
-            <button
-              key={action.id}
-              onClick={() => toggleAction(action.id)}
-              className={`w-full text-left p-5 rounded-lg border transition-all ${
-                selected
-                  ? "border-blue-600 bg-blue-50"
-                  : "border-border bg-card hover:border-blue-300"
-              }`}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h3 className="text-lg font-medium">{action.title}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {action.description}
-                  </p>
-                </div>
-                {selected && (
-                  <Check className="w-5 h-5 text-blue-600 mt-1" />
-                )}
-              </div>
-            </button>
-          );
-        })}
-
-        {filteredActions.length === 0 && (
-          <p className="text-muted-foreground">No actions found.</p>
+        {filteredTasks.length === 0 && (
+          <p className="text-muted-foreground">No tasks found.</p>
         )}
       </div>
 
@@ -136,23 +159,16 @@ export default function AgentAction() {
       <div className="max-w-4xl mx-auto px-6 py-8 border-t border-border flex justify-between">
         <button
           onClick={() => navigate("/trigger-page")}
-          className="px-6 py-3 rounded-lg border border-border hover:bg-muted"
+          className="px-6 py-3 font-medium text-foreground bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
         >
-          Previous
+          Previous Step
         </button>
 
         <button
-          disabled={selectedActions.length === 0}
-          onClick={() =>
-            navigate("/after-analysis", {
-              state: {
-                trigger,
-                actions: selectedActions
-              }
-            })
-          }
+          disabled={selectedTasks.length === 0}
+          onClick={() => navigate("/after-analysis")}
           className={`px-8 py-3 rounded-lg font-medium ${
-            selectedActions.length
+            selectedTasks.length > 0
               ? "bg-blue-600 text-white hover:bg-blue-700"
               : "bg-muted text-muted-foreground cursor-not-allowed"
           }`}

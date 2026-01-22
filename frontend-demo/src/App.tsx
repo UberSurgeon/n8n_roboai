@@ -1,7 +1,6 @@
 // src/App.tsx
 import { Routes, Route, Navigate } from "react-router-dom";
 
-import { WizardProvider } from "./context/WizardContext";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import TriggerPage from "./pages/Trigger_Page";
@@ -11,21 +10,19 @@ import Review_Agent from "./pages/Review_Agent";
 
 export default function App() {
   return (
-    <WizardProvider>
-      <Routes>
-        {/* Auth & Dashboard */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/dashboard" element={<Dashboard />} />
+    <Routes>
+      {/* Auth & Dashboard */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/dashboard" element={<Dashboard />} />
 
-        {/* Wizard Steps */}
-        <Route path="/trigger-page" element={<TriggerPage />} />
-        <Route path="/agent-action" element={<Agent_Action />} />
-        <Route path="/after-analysis" element={<After_Analysis />} />
-        <Route path="/review-agent" element={<Review_Agent />} />
+      {/* Wizard Steps */}
+      <Route path="/trigger-page" element={<TriggerPage />} />
+      <Route path="/agent-action" element={<Agent_Action />} />
+      <Route path="/after-analysis" element={<After_Analysis />} />
+      <Route path="/review-agent" element={<Review_Agent />} />
 
-        {/* Default route */}
-        <Route path="*" element={<Navigate to="/login" />} />
-      </Routes>
-    </WizardProvider>
+      {/* Default route */}
+      <Route path="*" element={<Navigate to="/login" />} />
+    </Routes>
   );
 }

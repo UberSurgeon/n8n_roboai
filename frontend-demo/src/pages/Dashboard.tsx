@@ -1,15 +1,8 @@
-import React, { useState } from 'react';
+// src/pages/Dashboard.tsx
+import React from 'react';
 import { Plus, Bot, FileText, Mail, Clock, Upload, Share2, Trash2 } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
-
-interface Agent {
-  id: string;
-  name: string;
-  trigger: string;
-  tasks: string[];
-  status: 'Active' | 'Inactive';
-  lastRun?: string;
-}
+import { useWizard } from '../context/WizardContext';
 
 const triggerIcons: Record<string, typeof Mail> = {
   'Outlook Email': Mail,
@@ -23,7 +16,7 @@ function AgentCard({
   onShare, 
   onDelete 
 }: { 
-  agent: Agent; 
+  agent: any; 
   onShare: () => void; 
   onDelete: () => void;
 }) {
@@ -35,7 +28,6 @@ function AgentCard({
   return (
     <div className="bg-card border border-border rounded-lg p-6 hover:shadow-sm transition-shadow">
       <div className="flex items-start justify-between gap-4">
-        {/* Left section with icon and content */}
         <div className="flex items-start gap-4 flex-1 min-w-0">
           <div className="flex-shrink-0 w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
             <Bot className="w-6 h-6 text-blue-600" />
@@ -61,7 +53,6 @@ function AgentCard({
           </div>
         </div>
 
-        {/* Right section with status and actions */}
         <div className="flex flex-col items-end gap-3">
           <span
             className={`px-3 py-1 rounded-md text-sm font-medium ${
@@ -102,47 +93,27 @@ function AgentCard({
 }
 
 export default function Dashboard() {
-  const navigate = useNavigate(); // ✅ inside component
+  const navigate = useNavigate();
+  const { agents, deleteAgent, resetWizard } = useWizard();
 
-  const [agents, setAgents] = useState<Agent[]>([
-    {
-      id: 'agent-1',
-      name: 'Assignment Feedback Assistant',
-      trigger: 'Moodle – Assignment Submitted',
-      tasks: ['Check References', 'Check Language'],
-      status: 'Active',
-      lastRun: '2 hours ago'
-    },
-    {
-      id: 'agent-2',
-      name: 'Email Response Helper',
-      trigger: 'Outlook Email',
-      tasks: ['Summarize Document', 'Reply to Student'],
-      status: 'Active',
-      lastRun: '1 day ago'
-    },
-    {
-      id: 'agent-3',
-      name: 'Weekly Report Generator',
-      trigger: 'Scheduled Run',
-      tasks: ['Summarize Document', 'Generate Report', 'Notify Me'],
-      status: 'Inactive',
-      lastRun: '3 days ago'
-    }
-  ]);
-
-  const handleShare = (agent: Agent) => { alert(`Share ${agent.name}`); };
+  const handleShare = (agent: any) => { 
+    alert(`Share ${agent.name}`); 
+  };
+  
   const handleDelete = (agentId: string) => {
     if (confirm('Are you sure you want to delete this agent?')) {
-      setAgents(agents.filter(a => a.id !== agentId));
+      deleteAgent(agentId);
     }
   };
 
   const handleCreateNew = () => {
-    navigate("/trigger-page"); // moves to the create page
+    resetWizard(); // Clear previous wizard selections
+    navigate("/trigger-page");
   };
  
-  const handleLogout = () => { navigate("/login"); }; // ✅ logout button
+  const handleLogout = () => { 
+    navigate("/login"); 
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -155,7 +126,6 @@ export default function Dashboard() {
           </div>
 
           <div className="flex gap-4">
-            {/* Create new agent */}
             <button
               onClick={handleCreateNew}
               className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
@@ -164,7 +134,6 @@ export default function Dashboard() {
               Create New Agent
             </button>
 
-            {/* Logout */}
             <button
               onClick={handleLogout}
               className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
