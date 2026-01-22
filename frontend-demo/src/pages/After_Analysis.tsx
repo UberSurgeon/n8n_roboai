@@ -120,10 +120,12 @@ export default function WizardStep3({ onNext, initialActions }: WizardStep3Props
           Previous Step
         </button>
         <button
-          onClick={() => onNext(selectedActions)}
+          onClick={() => navigate('/review-agent')}
           disabled={selectedActions.length === 0}
           className={`px-8 py-3 font-medium rounded-lg transition-colors ${
-            selectedActions.length > 0 ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm' : 'bg-muted text-muted-foreground cursor-not-allowed'
+            selectedActions.length > 0
+              ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
+              : 'bg-muted text-muted-foreground cursor-not-allowed'
           }`}
         >
           Next Step
