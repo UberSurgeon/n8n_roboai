@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { ArrowLeft, Search, Check } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
+
 interface Action {
   id: string;
   title: string;
@@ -58,7 +59,7 @@ export default function AgentAction() {
       <div className="bg-card border-b border-border">
         <div className="max-w-4xl mx-auto px-6 py-8">
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => navigate("/trigger-page")}
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -134,7 +135,7 @@ export default function AgentAction() {
       {/* Footer */}
       <div className="max-w-4xl mx-auto px-6 py-8 border-t border-border flex justify-between">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate("/trigger-page")}
           className="px-6 py-3 rounded-lg border border-border hover:bg-muted"
         >
           Previous
@@ -143,7 +144,7 @@ export default function AgentAction() {
         <button
           disabled={selectedActions.length === 0}
           onClick={() =>
-            navigate("/next-step", {
+            navigate("/after-analysis", {
               state: {
                 trigger,
                 actions: selectedActions
