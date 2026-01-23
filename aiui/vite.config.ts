@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "https://chris-unless-size-oklahoma.trycloudflare.com",
+        target: "https://coordinated-festival-won-faster.trycloudflare.com",
         changeOrigin: true,
         secure: true,
       },
