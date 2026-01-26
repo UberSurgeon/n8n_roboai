@@ -7,12 +7,6 @@ const AI_TASK_INSTRUCTIONS: Record<string, string> = {
   custom: "Follow any custom instructions provided by the user."
 };
 
-type CompiledTask = {
-  id: AiTask;
-  instruction: string;
-  outputKey: string;
-};
-
 type TriggerType =
   | "gmail"
   | "outlook-email"
@@ -27,29 +21,6 @@ type AiTask =
   | "check-references"
   | "custom";
 
-const AI_TASK_DEFINITIONS: Record<AiTask, CompiledTask> = {
-  summarize: {
-    id: "summarize",
-    instruction: "Summarize the content clearly and concisely.",
-    outputKey: "summary"
-  },
-  "check-language": {
-    id: "check-language",
-    instruction: "Check grammar, spelling, clarity, and tone. List issues and suggestions.",
-    outputKey: "languageIssues"
-  },
-  "check-references": {
-    id: "check-references",
-    instruction: "Identify references and assess their correctness and formatting.",
-    outputKey: "references"
-  },
-  custom: {
-    id: "custom",
-    instruction: "Follow the custom instructions provided by the user.",
-    outputKey: "customResult"
-  }
-};
-
 type ActionType =
   | "reply-gmail"
   | "reply-student"
@@ -57,17 +28,12 @@ type ActionType =
   | "save-result"
   | "generate-report";
 
-// Maps action nodes to the normalized key they require
-const ACTION_CONDITIONS: Record<ActionType, string> = {
-  "reply-gmail": "summary",
-  "reply-student": "summary",
-  "notify-me": "summary",
-  "save-result": "summary",
-  "generate-report": "raw"
-};
-
 function buildAIPrompt(tasks: AiTask[], triggerId: TriggerType): string {
-  const compiledTasks = tasks.map(task => AI_TASK_DEFINITIONS[task]);
+  const instructions = tasks
+    .map(task => AI_TASK_INSTRUCTIONS[task])
+    .filter(Boolean)
+    .map(i => `- ${i}`)
+    .join("\n");
 
   let contentRef = "";
   switch (triggerId) {
@@ -84,34 +50,16 @@ function buildAIPrompt(tasks: AiTask[], triggerId: TriggerType): string {
       contentRef = "{{ $json.content }}";
   }
 
-  const taskList = compiledTasks
-    .map(t => `- (${t.outputKey}) ${t.instruction}`)
-    .join("\n");
-
-  const outputSchema = compiledTasks
-    .map(t => `  "${t.outputKey}": string`)
-    .join(",\n");
-
   return `Current time is: {{ $today }}.
 
 You are an AI assistant helping with academic and professional tasks.
 
-CONTENT:
-${contentRef}
+Content to analyze: ${contentRef}
 
-TASKS:
-${taskList}
+Tasks to perform:
+${instructions}
 
-OUTPUT FORMAT (JSON ONLY):
-{
-${outputSchema}
-}
-
-Rules:
-- Return ONLY valid JSON
-- Do not include explanations outside JSON
-- If a task cannot be completed, return an empty string for that key
-`;
+Analyze the content and return your findings as clear, structured text.`;
 }
 
 export function buildN8nWorkflow(
@@ -130,7 +78,10 @@ export function buildN8nWorkflow(
   switch (triggerId) {
     case "gmail":
       triggerNode = {
-        parameters: { pollTimes: { item: [{ mode: "everyMinute" }] }, filters: {} },
+        parameters: {
+          pollTimes: { item: [{ mode: "everyMinute" }] },
+          filters: {}
+        },
         name: triggerNodeName,
         type: "n8n-nodes-base.gmailTrigger",
         typeVersion: 1.3,
@@ -142,7 +93,10 @@ export function buildN8nWorkflow(
 
     case "outlook-email":
       triggerNode = {
-        parameters: { pollTimes: { item: [{ mode: "everyMinute" }] }, filters: {} },
+        parameters: {
+          pollTimes: { item: [{ mode: "everyMinute" }] },
+          filters: {}
+        },
         name: triggerNodeName,
         type: "n8n-nodes-base.microsoftOutlookTrigger",
         typeVersion: 1,
@@ -192,7 +146,7 @@ export function buildN8nWorkflow(
   };
   nodes.push(aiAgentNode);
 
-  /* ================ CHAT MODEL (OpenAI) ================ */
+  /* ================ CHAT MODEL NODE ================ */
   const chatModelName = "OpenAI Chat Model";
   const chatModelNode = {
     parameters: { model: "gpt-4o-mini", options: {} },
@@ -208,7 +162,11 @@ export function buildN8nWorkflow(
   /* ================ MEMORY NODE ================ */
   const memoryName = "Window Buffer Memory";
   const memoryNode = {
-    parameters: { sessionIdType: "customKey", sessionKey: "={{ $json.id || $json.threadId || $execution.id }}", contextWindowLength: 5 },
+    parameters: {
+      sessionIdType: "customKey",
+      sessionKey: "={{ $json.id || $json.threadId || $execution.id }}",
+      contextWindowLength: 5
+    },
     type: "@n8n/n8n-nodes-langchain.memoryBufferWindow",
     typeVersion: 1.3,
     position: [580, 480],
@@ -217,39 +175,51 @@ export function buildN8nWorkflow(
   };
   nodes.push(memoryNode);
 
-  /* ================ NORMALIZATION NODE ================ */
-  const normalizeNodeName = "Normalize AI Output";
-  const normalizeNode = {
-    parameters: {
-      mode: "runOnceForAllItems",
-      jsCode: `
-return {
-  json: {
-    summary: $json.summary || "",
-    languageIssues: $json.languageIssues || "",
-    references: $json.references || "",
-    customResult: $json.customResult || "",
-    raw: $json
-  }
-};
-`
-    },
-    type: "n8n-nodes-base.code",
-    typeVersion: 2,
-    position: [660, 300],
-    id: crypto.randomUUID(),
-    name: normalizeNodeName
-  };
-  nodes.push(normalizeNode);
-
-  // === Connections: Trigger → AI Agent → Chat → Memory → Normalize ===
+  // Connect trigger → AI Agent
   connections[triggerNodeName] = { main: [[{ node: aiAgentName, type: "main", index: 0 }]] };
+  
+  // Connect Chat Model & Memory to AI Agent
   connections[chatModelName] = { ai_languageModel: [[{ node: aiAgentName, type: "ai_languageModel", index: 0 }]] };
   connections[memoryName] = { ai_memory: [[{ node: aiAgentName, type: "ai_memory", index: 0 }]] };
-  connections[aiAgentName] = { main: [[{ node: normalizeNodeName, type: "main", index: 0 }]] };
 
-  /* ================ ACTION NODES + IF LOGIC ================ */
-  let actionNodeNames: { ifNodeName: string; actionNodeName: string }[] = [];
+  /* ================ FILTER NODE (CHECK IF OUTPUT EXISTS) ================ */
+  const filterNodeName = "Check AI Output";
+  const filterNode = {
+    parameters: {
+      conditions: {
+        options: {
+          caseSensitive: true,
+          leftValue: "",
+          typeValidation: "strict"
+        },
+        conditions: [
+          {
+            id: crypto.randomUUID(),
+            leftValue: "={{ $json.output }}",
+            rightValue: "",
+            operator: {
+              type: "string",
+              operation: "notEmpty"
+            }
+          }
+        ],
+        combinator: "and"
+      },
+      options: {}
+    },
+    type: "n8n-nodes-base.if",
+    typeVersion: 2,
+    position: [690, 300],
+    id: crypto.randomUUID(),
+    name: filterNodeName
+  };
+  nodes.push(filterNode);
+
+  // Connect AI Agent → Filter
+  connections[aiAgentName] = { main: [[{ node: filterNodeName, type: "main", index: 0 }]] };
+
+  /* ================ ACTION NODES ================ */
+  const ifOutputs: any[] = [];
 
   actions.forEach((action, index) => {
     const actionNodeName = `${action.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}`;
@@ -262,12 +232,12 @@ return {
             sendTo: "={{ $('When this happens').item.json.From }}",
             subject: "=Re: {{ $('When this happens').item.json.Subject }}",
             emailType: "text",
-            message: "={{ $json.summary }}",
+            message: "={{ $json.output }}",
             options: {}
           },
           type: "n8n-nodes-base.gmail",
           typeVersion: 2.2,
-          position: [1000, 300 + index * 120],
+          position: [890, 200 + (index * 150)],
           id: crypto.randomUUID(),
           name: actionNodeName,
           webhookId: crypto.randomUUID(),
@@ -282,14 +252,14 @@ return {
             operation: "send",
             message: {
               subject: "=Re: {{ $('When this happens').item.json.Subject }}",
-              bodyContent: "={{ $json.summary }}",
+              bodyContent: "={{ $json.output }}",
               toRecipients: "={{ $('When this happens').item.json.from.emailAddress.address }}",
               bodyContentType: "text"
             }
           },
           type: "n8n-nodes-base.microsoftOutlook",
           typeVersion: 2.1,
-          position: [1000, 300 + index * 120],
+          position: [890, 200 + (index * 150)],
           id: crypto.randomUUID(),
           name: actionNodeName,
           credentials: { microsoftOutlookOAuth2Api: { id: "{{OUTLOOK_CREDENTIAL_ID}}", name: "Microsoft Outlook" } }
@@ -302,16 +272,42 @@ return {
             sendTo: "your-email@example.com",
             subject: "AI Agent Notification",
             emailType: "text",
-            message: "={{ $json.summary || JSON.stringify($json.raw, null, 2) }}",
+            message: "=AI Analysis Complete:\n\n{{ $json.output }}",
             options: {}
           },
           type: "n8n-nodes-base.gmail",
           typeVersion: 2.2,
-          position: [1000, 300 + index * 120],
+          position: [890, 200 + (index * 150)],
           id: crypto.randomUUID(),
           name: actionNodeName,
           webhookId: crypto.randomUUID(),
           credentials: { gmailOAuth2: { id: "{{GMAIL_CREDENTIAL_ID}}", name: "Gmail account" } }
+        };
+        break;
+
+      case "generate-report":
+        actionNode = {
+          parameters: {
+            mode: "runOnceForAllItems",
+            jsCode: `const aiResult = $json.output || $json.text || "";
+const timestamp = new Date().toISOString();
+const triggerData = $('When this happens').item.json;
+
+return {
+  json: {
+    timestamp,
+    analysis: aiResult,
+    subject: triggerData.Subject || triggerData.subject || "N/A",
+    from: triggerData.From || triggerData.from || "N/A",
+    status: 'completed'
+  }
+};`
+          },
+          type: "n8n-nodes-base.code",
+          typeVersion: 2,
+          position: [890, 200 + (index * 150)],
+          id: crypto.randomUUID(),
+          name: actionNodeName
         };
         break;
 
@@ -325,81 +321,44 @@ return {
               mappingMode: "defineBelow",
               value: {
                 Timestamp: "={{ new Date().toISOString() }}",
-                "AI Result": "={{ JSON.stringify($json.raw) }}",
-                Source: "={{ $('When this happens').item.json.Subject || 'N/A' }}"
+                "AI Result": "={{ $json.output }}",
+                Subject: "={{ $('When this happens').item.json.Subject || $('When this happens').item.json.subject || 'N/A' }}",
+                From: "={{ $('When this happens').item.json.From || $('When this happens').item.json.from || 'N/A' }}"
               }
             },
             options: {}
           },
           type: "n8n-nodes-base.googleSheets",
           typeVersion: 4.4,
-          position: [1000, 300 + index * 120],
+          position: [890, 200 + (index * 150)],
           id: crypto.randomUUID(),
           name: actionNodeName,
           credentials: { googleSheetsOAuth2Api: { id: "{{GOOGLE_SHEETS_CREDENTIAL_ID}}", name: "Google Sheets" } }
         };
         break;
 
-      case "generate-report":
-        actionNode = {
-          parameters: {
-            mode: "runOnceForAllItems",
-            jsCode: `
-const aiResult = $json;
-const timestamp = new Date().toISOString();
-return {
-  json: {
-    timestamp: timestamp,
-    analysis: aiResult,
-    triggerData: $('When this happens').item.json,
-    status: 'completed'
-  }
-};`
-          },
-          type: "n8n-nodes-base.code",
-          typeVersion: 2,
-          position: [1000, 300 + index * 120],
-          id: crypto.randomUUID(),
-          name: actionNodeName
-        };
-        break;
-
       default:
         actionNode = {
-          parameters: { mode: "runOnceForAllItems", jsCode: "return [{ json: $input.item.json }];" },
+          parameters: { mode: "runOnceForAllItems", jsCode: `return [{ json: $input.item.json }];` },
           type: "n8n-nodes-base.code",
           typeVersion: 2,
-          position: [1000, 300 + index * 120],
+          position: [890, 200 + (index * 150)],
           id: crypto.randomUUID(),
           name: actionNodeName
         };
     }
 
-    // Add IF node before action
-    const ifNodeName = `If ${actionNodeName}`;
-    const ifNode = {
-      parameters: { conditions: { string: [{ value1: `={{ $json.${ACTION_CONDITIONS[action]} }}`, operation: "notEmpty" }] } },
-      type: "n8n-nodes-base.if",
-      typeVersion: 2,
-      position: [830, 300 + index * 120],
-      id: crypto.randomUUID(),
-      name: ifNodeName
-    };
-
-    nodes.push(ifNode);
     nodes.push(actionNode);
-    actionNodeNames.push({ ifNodeName, actionNodeName });
+    ifOutputs.push({ node: actionNodeName, type: "main", index: 0 });
   });
 
-  // Normalize → IF nodes
-  connections[normalizeNodeName] = {
-    main: [actionNodeNames.map(({ ifNodeName }) => ({ node: ifNodeName, type: "main", index: 0 }))]
+  // Connect Filter → All Actions (only when condition is TRUE)
+  connections[filterNodeName] = {
+    main: [
+      ifOutputs,  // TRUE branch - goes to all actions
+      []          // FALSE branch - empty (stops execution)
+    ]
   };
-
-  // IF → Action (TRUE branch)
-  actionNodeNames.forEach(({ ifNodeName, actionNodeName }) => {
-    connections[ifNodeName] = { main: [[{ node: actionNodeName, type: "main", index: 0 }]], false: [] };
-  });
 
   /* ================ WORKFLOW METADATA ================ */
   return {
@@ -411,6 +370,13 @@ return {
     pinData: {},
     versionId: crypto.randomUUID(),
     meta: { instanceId: "n8n-instance" },
-    tags: [{ createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), id: "1", name: "AI Agent" }]
+    tags: [
+      {
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        id: "1",
+        name: "AI Agent"
+      }
+    ]
   };
 }
