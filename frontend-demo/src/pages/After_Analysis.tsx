@@ -1,6 +1,6 @@
 // src/pages/After_Analysis.tsx
 import React, { useState } from 'react';
-import { MessageCircle, FileOutput, Bell, Save, ArrowLeft, Database, Send, Sparkles, Search } from 'lucide-react';
+import { MessageCircle, FileOutput, Bell, Save, ArrowLeft, Database, Send, Sparkles, Search, Mail } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useWizard } from '../context/WizardContext';
 
@@ -13,7 +13,8 @@ interface Action {
 }
 
 const actions: Action[] = [
-  { id: 'reply-student', icon: MessageCircle, title: 'Reply to Student', description: 'Send a short, polite message to the student if issues are found' },
+  { id: 'reply-gmail', icon: Mail, title: 'Reply via Gmail', description: 'Send a response email via Gmail to the sender' },
+  { id: 'reply-student', icon: MessageCircle, title: 'Reply via Outlook', description: 'Send a response email via Outlook to the sender' },
   { id: 'generate-report', icon: FileOutput, title: 'Generate Report', description: 'Create a detailed report for you to review before taking action' },
   { id: 'notify-me', icon: Bell, title: 'Notify Me', description: 'Send you a notification when the analysis is complete' },
   { id: 'save-result', icon: Save, title: 'Save Result', description: 'Store the analysis result for later reference and review' },

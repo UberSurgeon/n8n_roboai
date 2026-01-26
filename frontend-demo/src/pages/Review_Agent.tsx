@@ -20,6 +20,7 @@ import { buildN8nWorkflow } from "../utils/n8nWorkflowBuilder";
 
 // Map IDs to display information
 const triggerMap: Record<string, { icon: typeof Mail; title: string }> = {
+  "gmail": { icon: Mail, title: "Gmail" },
   "outlook-email": { icon: Mail, title: "Outlook Email" },
   "moodle-assignment": { icon: FileText, title: "Moodle – Assignment Submitted" },
   "manual-upload": { icon: Upload, title: "Manual File Upload" },
@@ -34,7 +35,8 @@ const taskMap: Record<string, { icon: typeof CheckCircle; title: string }> = {
 };
 
 const actionMap: Record<string, { icon: typeof MessageCircle; title: string }> = {
-  "reply-student": { icon: MessageCircle, title: "Reply to Student" },
+  "reply-gmail": { icon: Mail, title: "Reply via Gmail" },
+  "reply-student": { icon: MessageCircle, title: "Reply via Outlook" },
   "generate-report": { icon: FileOutput, title: "Generate Report" },
   "notify-me": { icon: Bell, title: "Notify Me" },
   "save-result": { icon: Save, title: "Save Result" },
@@ -43,6 +45,7 @@ const actionMap: Record<string, { icon: typeof MessageCircle; title: string }> =
 // Helper function to generate agent name
 const generateAgentName = (trigger: string | null, tasks: string[]): string => {
   const triggerNames: Record<string, string> = {
+    'gmail': 'Gmail',
     'outlook-email': 'Email',
     'moodle-assignment': 'Assignment',
     'manual-upload': 'Document',
@@ -81,17 +84,19 @@ export default function ReviewAgent() {
     }
 
     // Generate workflow JSON
-    const workflowJSON = buildN8nWorkflow(
-      selectedTrigger,
-      selectedActions,
-      generateAgentName(selectedTrigger, selectedTasks)
+    const agentName = generateAgentName(selectedTrigger, selectedTasks);
+    const workflow = buildN8nWorkflow(
+      selectedTrigger as any,
+      selectedTasks as any,
+      selectedActions as any,
+      agentName
     );
 
-    console.log("Generated workflow:", workflowJSON);
+    console.log("Generated workflow:", workflow);
 
     // Download workflow as JSON file
     const blob = new Blob(
-      [JSON.stringify(workflowJSON, null, 2)],
+      [JSON.stringify(workflow, null, 2)],
       { type: "application/json" }
     );
     const url = URL.createObjectURL(blob);

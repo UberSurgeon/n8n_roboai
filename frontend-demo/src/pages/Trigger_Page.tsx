@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Mail, FileText, Upload, Clock, ArrowLeft, Webhook, Calendar, Zap, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useWizard } from "../context/WizardContext"; // <-- use global wizard state
+import { useWizard } from "../context/WizardContext";
 
 interface Trigger {
   id: string;
@@ -13,7 +13,8 @@ interface Trigger {
 }
 
 const triggers: Trigger[] = [
-  { id: "outlook-email", icon: Mail, title: "Outlook Email", description: "Runs when a new email arrives in your inbox" },
+  { id: "gmail", icon: Mail, title: "Gmail", description: "Runs when a new email arrives in your Gmail inbox" },
+  { id: "outlook-email", icon: Mail, title: "Outlook Email", description: "Runs when a new email arrives in your Outlook inbox" },
   { id: "moodle-assignment", icon: FileText, title: "Moodle – Assignment Submitted", description: "Runs when a student submits an assignment in Moodle" },
   { id: "manual-upload", icon: Upload, title: "Manual File Upload", description: "Runs when you upload a document" },
   { id: "scheduled-run", icon: Clock, title: "Scheduled Run", description: "Runs automatically at a chosen time (daily, weekly, or monthly)" },
@@ -55,7 +56,7 @@ function TriggerOption({ trigger, selected, onClick }: { trigger: Trigger; selec
 
 export default function TriggerPage() {
   const navigate = useNavigate();
-const { selectedTrigger, setTrigger } = useWizard();
+  const { selectedTrigger, setTrigger } = useWizard();
   const [search, setSearch] = useState("");
 
   const filteredTriggers = triggers.filter((trigger) =>
